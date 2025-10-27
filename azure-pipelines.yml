@@ -1,0 +1,69 @@
+# ============================================
+# Simple Azure Pipeline for Terraform
+# ============================================
+
+trigger:
+  - main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  terraformVersion: '1.6.5'
+  azureServiceConnection: 'Azure-ServiceConnection'
+  terraformWorkingDirectory: '$(System.DefaultWorkingDirectory)/terraform'
+
+
+steps:
+  # Install Terraform
+  - task: TerraformInstaller@1
+    displayName: 'Install Terraform'
+    inputs:
+      terraformVersion: '$(terraformVersion)'
+
+  # Terraform Init
+  - task: TerraformTaskV4@4
+    displayName: 'Terraform Init'
+    inputs:
+      provider: 'azurerm'
+      command: 'init'
+      workingDirectory: $(terraformWorkingDirectory)
+      backendServiceArm: $(azureServiceConnection)
+
+
+  # Terraform Validate
+  - task: TerraformTaskV4@4
+    displayName: 'Terraform Validate'
+    inputs:
+      provider: 'azurerm'
+      command: 'validate'
+      workingDirectory: $(terraformWorkingDirectory)
+
+  # Terraform Plan
+  - task: TerraformTaskV4@4
+    displayName: 'Terraform Plan'
+    inputs:
+      provider: 'azurerm'
+      command: 'plan'
+      workingDirectory: $(terraformWorkingDirectory)
+      environmentServiceNameAzureRM: $(azureServiceConnection)
+      commandOptions: '-var-file="terraform.tfvars"'
+
+  # Manual approval (optional)
+  - task: ManualValidation@0
+    displayName: 'Review Plan and Approve'
+    inputs:
+      notifyUsers: 'your-email@company.com'
+      instructions: 'Review the Terraform plan above and approve to continue'
+      onTimeout: 'reject'
+    condition: eq(variables['Build.SourceBranch'], 'refs/heads/main')
+
+  # Terraform Apply
+  - task: TerraformTaskV4@4
+    displayName: 'Terraform Apply'
+    inputs:
+      provider: 'azurerm'
+      command: 'apply'
+      workingDirectory: $(terraformWorkingDirectory)
+      environmentServiceNameAzureRM: $(azureServiceConnection)
+      commandOptions: '-auto-approve -var-file="terraform.tfvars"'
