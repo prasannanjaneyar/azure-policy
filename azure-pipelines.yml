@@ -31,10 +31,10 @@ steps:
       provider: 'azurerm'
       command: 'init'
       workingDirectory: '$(terraformWorkingDirectory)'
-      backendServiceArm: 'policy-svc'
-      backendAzureRmResourceGroupName: 'rg-terraform-state'
-      backendAzureRmStorageAccountName: 'sttfstate1234589'
-      backendAzureRmContainerName: 'tfstate'
+      backendServiceArm: '$(azureServiceConnection)'
+      backendAzureRmResourceGroupName: '$(backendResourceGroup)'
+      backendAzureRmStorageAccountName: '$(backendStorageAccount)'
+      backendAzureRmContainerName: '$(backendContainer)'
       backendAzureRmKey: '$(backendKey)'
 
   # Terraform Validate
@@ -53,7 +53,7 @@ steps:
       command: 'plan'
       workingDirectory: '$(terraformWorkingDirectory)'
       commandOptions: '-var-file="terraform.tfvars"'
-      environmentServiceNameAzureRM: 'policy-svc'
+      environmentServiceNameAzureRM: '$(azureServiceConnection)'
 
   # Manual approval (optional)
   # - task: ManualValidation@0
