@@ -77,15 +77,6 @@ steps:
     displayName: 'Show Plan Summary'
     condition: succeeded()
 
-  # Manual approval
-  - task: ManualValidation@0
-    displayName: 'Review Plan and Approve'
-    inputs:
-      notifyUsers: 'prasannadevopsr@gmail.com'
-      instructions: 'Review the Terraform plan above and approve to continue'
-      onTimeout: 'reject'
-    condition: eq(variables['Build.SourceBranch'], 'refs/heads/main')
-
   # Terraform Apply
   - task: TerraformTaskV4@4
     displayName: 'Terraform Apply'
