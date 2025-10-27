@@ -12,14 +12,17 @@ variables:
   terraformVersion: '1.6.5'
   azureServiceConnection: 'Azure-ServiceConnection'
   terraformWorkingDirectory: '$(System.DefaultWorkingDirectory)/terraform'
-
+  backendResourceGroup: 'rg-terraform-state'
+  backendStorageAccount: 'sttfstate1234589'
+  backendContainer: 'tfstate'
+  backendKey: 'network-policies.tfstate'
 
 steps:
   # Install Terraform
   - task: TerraformInstaller@1
     displayName: 'Install Terraform'
     inputs:
-      terraformVersion: '$(terraformVersion)'
+      terraformVersion: $(terraformVersion)
 
   # Terraform Init
   - task: TerraformTaskV4@4
@@ -29,7 +32,10 @@ steps:
       command: 'init'
       workingDirectory: $(terraformWorkingDirectory)
       backendServiceArm: $(azureServiceConnection)
-
+      backendAzureRmResourceGroupName: $(backendResourceGroup)
+      backendAzureRmStorageAccountName: $(backendStorageAccount)
+      backendAzureRmContainerName: $(backendContainer)
+      backendAzureRmKey: $(backendKey)
 
   # Terraform Validate
   - task: TerraformTaskV4@4
