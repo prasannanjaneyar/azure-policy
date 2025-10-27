@@ -1,0 +1,105 @@
+# ============================================
+# Fixed Azure Pipeline for Terraform
+# ============================================
+
+trigger:
+  - main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  terraformVersion: '1.6.5'
+  azureServiceConnection: 'policy-svc'
+  terraformWorkingDirectory: '$(System.DefaultWorkingDirectory)/terraform'
+  backendResourceGroup: 'rg-terraform-state'
+  backendStorageAccount: 'sttfstate1234589'
+  backendContainer: 'tfstate'
+  backendKey: 'network-policies.tfstate'
+
+steps:
+  # Checkout code
+  - checkout: self
+    displayName: 'Checkout Repository'
+  
+  # Install Terraform - Use version 0 instead of 1
+  - task: TerraformInstaller@0
+    displayName: 'Install Terraform'
+    inputs:
+      terraformVersion: '$(terraformVersion)'
+  
+  # Verify Terraform Installation
+  - script: |
+      echo "Verifying Terraform installation..."
+      terraform version
+      which terraform
+      echo "Working directory: $(terraformWorkingDirectory)"
+      ls -la $(terraformWorkingDirectory)
+    displayName: 'Verify Terraform Installation'
+    continueOnError: false
+
+  # Terraform Init
+  - task: TerraformTaskV4@4
+    displayName: 'Terraform Init'
+    inputs:
+      provider: 'azurerm'
+      command: 'init'
+      workingDirectory: '$(terraformWorkingDirectory)'
+      backendServiceArm: '$(azureServiceConnection)'
+      backendAzureRmResourceGroupName: '$(backendResourceGroup)'
+      backendAzureRmStorageAccountName: '$(backendStorageAccount)'
+      backendAzureRmContainerName: '$(backendContainer)'
+      backendAzureRmKey: '$(backendKey)'
+
+  # Terraform Validate
+  - task: TerraformTaskV4@4
+    displayName: 'Terraform Validate'
+    inputs:
+      provider: 'azurerm'
+      command: 'validate'
+      workingDirectory: '$(terraformWorkingDirectory)'
+
+  # Terraform Plan
+  - task: TerraformTaskV4@4
+    displayName: 'Terraform Plan'
+    inputs:
+      provider: 'azurerm'
+      command: 'plan'
+      workingDirectory: '$(terraformWorkingDirectory)'
+      environmentServiceNameAzureRM: '$(azureServiceConnection)'
+      commandOptions: '-var-file="terraform.tfvars" -out=tfplan'
+
+  # Show Plan Summary
+  - script: |
+      cd $(terraformWorkingDirectory)
+      echo "=== Terraform Plan Summary ==="
+      terraform show -no-color tfplan | head -100
+    displayName: 'Show Plan Summary'
+    condition: succeeded()
+
+  # Manual approval
+  - task: ManualValidation@0
+    displayName: 'Review Plan and Approve'
+    inputs:
+      notifyUsers: 'prasannadevopsr@gmail.com'
+      instructions: 'Review the Terraform plan above and approve to continue'
+      onTimeout: 'reject'
+    condition: eq(variables['Build.SourceBranch'], 'refs/heads/main')
+
+  # Terraform Apply
+  - task: TerraformTaskV4@4
+    displayName: 'Terraform Apply'
+    inputs:
+      provider: 'azurerm'
+      command: 'apply'
+      workingDirectory: '$(terraformWorkingDirectory)'
+      environmentServiceNameAzureRM: '$(azureServiceConnection)'
+      commandOptions: 'tfplan'  # Apply the saved plan
+
+  # Show Outputs
+  - script: |
+      cd $(terraformWorkingDirectory)
+      echo "=== Terraform Outputs ==="
+      terraform output
+    displayName: 'Show Terraform Outputs'
+    condition: succeeded()
