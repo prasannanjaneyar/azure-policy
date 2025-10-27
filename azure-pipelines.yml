@@ -10,7 +10,7 @@ pool:
 
 variables:
   terraformVersion: '1.6.5'
-  azureServiceConnection: 'Azure-ServiceConnection'
+  azureServiceConnection: 'policy-svc'
   terraformWorkingDirectory: '$(System.DefaultWorkingDirectory)/terraform'
   backendResourceGroup: 'rg-terraform-state'
   backendStorageAccount: 'sttfstate1234589'
@@ -30,12 +30,12 @@ steps:
     inputs:
       provider: 'azurerm'
       command: 'init'
-      workingDirectory: $(terraformWorkingDirectory)
-      backendServiceArm: $(azureServiceConnection)
-      backendAzureRmResourceGroupName: $(backendResourceGroup)
-      backendAzureRmStorageAccountName: $(backendStorageAccount)
-      backendAzureRmContainerName: $(backendContainer)
-      backendAzureRmKey: $(backendKey)
+      workingDirectory: '$(terraformWorkingDirectory)'
+      backendServiceArm: 'policy-svc'
+      backendAzureRmResourceGroupName: 'rg-terraform-state'
+      backendAzureRmStorageAccountName: 'sttfstate1234589'
+      backendAzureRmContainerName: 'tfstate'
+      backendAzureRmKey: '$(backendKey)'
 
   # Terraform Validate
   - task: TerraformTaskV4@4
@@ -51,18 +51,17 @@ steps:
     inputs:
       provider: 'azurerm'
       command: 'plan'
-      workingDirectory: $(terraformWorkingDirectory)
-      environmentServiceNameAzureRM: $(azureServiceConnection)
+      workingDirectory: '$(terraformWorkingDirectory)'
       commandOptions: '-var-file="terraform.tfvars"'
+      environmentServiceNameAzureRM: 'policy-svc'
 
   # Manual approval (optional)
-  - task: ManualValidation@0
-    displayName: 'Review Plan and Approve'
-    inputs:
-      notifyUsers: 'your-email@company.com'
-      instructions: 'Review the Terraform plan above and approve to continue'
-      onTimeout: 'reject'
-    condition: eq(variables['Build.SourceBranch'], 'refs/heads/main')
+  # - task: ManualValidation@0
+  #   displayName: 'Review Plan and Approve'
+  #   inputs:
+  #     notifyUsers: 'prasannadevopsr@gmail.com'
+  #     instructions: 'Review the Terraform plan above and approve to continue'
+  #   condition: eq(variables['Build.SourceBranch'], 'refs/heads/main')
 
   # Terraform Apply
   - task: TerraformTaskV4@4
