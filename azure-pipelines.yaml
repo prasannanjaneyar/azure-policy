@@ -11,7 +11,7 @@ pool:
 variables:
   terraformVersion: '1.6.5'
   azureServiceConnection: 'policy-svc'
-  terraformWorkingDirectory: '$(System.DefaultWorkingDirectory)/terraform'
+  terraformWorkingDirectory: '$(System.DefaultWorkingDirectory)'
   backendResourceGroup: 'rg-terraform-state'
   backendStorageAccount: 'sttfstate1234589'
   backendContainer: 'tfstate'
